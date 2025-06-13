@@ -10,9 +10,9 @@ interface ThreeVisualizationProps {
 
 export function ThreeVisualization({ data, isVisible }: ThreeVisualizationProps) {
   const mountRef = useRef<HTMLDivElement>(null)
-  const sceneRef = useRef<THREE.Scene>()
-  const rendererRef = useRef<THREE.WebGLRenderer>()
-  const animationRef = useRef<number>()
+  const sceneRef = useRef<THREE.Scene | null>(null)
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
+  const animationRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (!mountRef.current) return

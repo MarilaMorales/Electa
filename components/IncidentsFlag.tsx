@@ -1,15 +1,61 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AlertTriangle, X, Clock, MapPin } from "lucide-react"
 import type { Incident } from "../types/election"
+import { getSocket, emitIncidentUpdate } from "../lib/socket"
 
 interface IncidentsFlagProps {
   incidents: Incident[]
+  onIncidentsChange?: (incidents: Incident[]) => void
 }
 
-export function IncidentsFlag({ incidents }: IncidentsFlagProps) {
+export function IncidentsFlag({ incidents: initialIncidents, onIncidentsChange }: IncidentsFlagProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [incidents, setIncidents] = useState<Incident[]>(initialIncidents)
+
+  useEffect(() => {
+    const socket = getSocket()
+    
+    // Escuchar actualizaciones de incidentes
+    socket.on('incident_update', (data: Incident) => {
+      setIncidents(prev => {
+        const existing = prev.find(i => i.id === data.id)
+        if (existing) {
+          const updated = prev.map(i => i.id === data.id ? data : i)
+          onIncidentsChange?.(updated)
+          return updated
+        }
+        const newIncidents = [...prev, data]
+        onIncidentsChange?.(newIncidents)
+        return newIncidents
+      })
+    })
+
+    return () => {
+      socket.off('incident_update')
+    }
+  }, [onIncidentsChange])
+
+  // Sincronizar con props externos
+  useEffect(() => {
+    setIncidents(initialIncidents)
+  }, [initialIncidents])
+
+  const handleAddIncident = (incident: Omit<Incident, 'id' | 'timestamp'>) => {
+    const newIncident: Incident = {
+      ...incident,
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString()
+    }
+    
+    emitIncidentUpdate(newIncident)
+    setIncidents(prev => {
+      const updated = [...prev, newIncident]
+      onIncidentsChange?.(updated)
+      return updated
+    })
+  }
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {

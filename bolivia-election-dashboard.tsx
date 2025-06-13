@@ -7,10 +7,14 @@ import { PoliticalParties } from "./components/PoliticalParties"
 import { ThreeVisualization } from "./components/ThreeVisualization"
 import { IncidentsFlag } from "./components/IncidentsFlag"
 import { mockElectionData } from "./data/mockData"
-import type { BoliviaRegion } from "./types/election"
+import type { BoliviaRegion, ElectionData } from "./types/election"
+import { getSocket } from "./lib/socket"
 
 export default function BoliviaElectionDashboard() {
-  const [electionData, setElectionData] = useState(mockElectionData)
+  const [electionData, setElectionData] = useState<ElectionData>({
+    ...mockElectionData,
+    totalVotes: 0
+  })
   const [selectedRegion, setSelectedRegion] = useState<BoliviaRegion | null>(null)
   const [showVisualization, setShowVisualization] = useState(true)
 
@@ -23,7 +27,6 @@ export default function BoliviaElectionDashboard() {
 
   const handleRegionClick = (region: BoliviaRegion) => {
     setSelectedRegion(region)
-    // You could show more details about the region here
     console.log("Selected region:", region)
   }
 
@@ -31,15 +34,18 @@ export default function BoliviaElectionDashboard() {
   const partyVoteData = electionData.parties.slice(0, 5).map((party) => party.votes)
 
   useEffect(() => {
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      setElectionData((prev) => ({
+    const socket = getSocket()
+    
+    socket.on('vote count', (count: number) => {
+      setElectionData(prev => ({
         ...prev,
-        totalVotes: prev.totalVotes + Math.floor(Math.random() * 100),
+        totalVotes: count
       }))
-    }, 10000) // Update every 10 seconds
+    })
 
-    return () => clearInterval(interval)
+    return () => {
+      socket.off('vote count')
+    }
   }, [])
 
   return (

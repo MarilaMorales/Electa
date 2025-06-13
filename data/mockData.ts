@@ -5,52 +5,144 @@ export const mockElectionData: ElectionData = {
   parties: [
     {
       id: "1",
-      name: "Movement for Socialism",
-      abbreviation: "MAS",
+      name: "Movimiento al Socialismo",
+      abbreviation: "MAS-IPSP",
       votes: 1423796,
       percentage: 50.02,
       color: "#1E40AF",
+      candidate: {
+        name: "Eduardo del Castillo",
+        photo: "/img/EduardoCastillo.MAS-IPSP.png",
+        bio: "Abogado de 46 años, actualmente ministro de Gobierno de Bolivia. Ha ocupado varios cargos en el gobierno del MAS y es considerado cercano tanto a Evo Morales como a Luis Arce. Fue designado como candidato presidencial del MAS tras la inhabilitación de Morales y la decisión de Arce de no buscar la reelección.",
+        partyWebsite: "https://mas-ipsp.org.bo"
+      }
     },
     {
       id: "2",
-      name: "Third System Movement",
-      abbreviation: "MTS",
+      name: "Alianza LIBRE-Libertad y Democracia",
+      abbreviation: "LIBRE",
       votes: 854277,
       percentage: 30.01,
       color: "#DC2626",
+      candidate: {
+        name: "Jorge 'Tuto' Quiroga",
+        photo: "/img/JorgeTutoQuiroga.AlianzaLIBRE.png",
+        bio: "Ingeniero industrial y político veterano de 64 años que ya fue presidente de Bolivia entre 2001-2002, completando el mandato de Hugo Banzer tras su renuncia por enfermedad. Es considerado un político de centro-derecha con experiencia internacional y ha sido una figura constante en la política boliviana durante las últimas décadas.",
+        partyWebsite: "https://libre.org.bo"
+      }
     },
     {
       id: "3",
-      name: "Unity Alliance",
-      abbreviation: "Unity Block",
+      name: "Bloque de Unidad",
+      abbreviation: "UNIDAD",
       votes: 426414,
       percentage: 14.98,
       color: "#059669",
+      candidate: {
+        name: "Samuel Doria Medina",
+        photo: "/img/SamuelDoriaMedina.BloqueDeUnidad.png",
+        bio: "Empresario y político de 65 años, fundador del partido Unidad Nacional. Lidera las encuestas con 19.1% de intención de voto. Ha sido candidato presidencial en varias ocasiones anteriores y es conocido por su perfil empresarial y sus propuestas de modernización económica del país.",
+        partyWebsite: "https://unidad.org.bo"
+      }
     },
     {
       id: "4",
-      name: "Democratic Action",
-      abbreviation: "AD",
+      name: "Alianza APB Súmate",
+      abbreviation: "APB",
       votes: 85552,
       percentage: 3.01,
       color: "#7C3AED",
+      candidate: {
+        name: "Manfred Reyes Villa",
+        photo: "/img/ManfredReyesVilla.AlianzaABPSumate.png",
+        bio: "Exmilitar y político de 72 años, exalcalde de Cochabamba. Ha tenido una carrera política controversial, incluyendo períodos en el exilio. Es conocido por su estilo populista y su base de apoyo en la región de Cochabamba.",
+        partyWebsite: "https://apb.org.bo"
+      }
     },
     {
       id: "5",
-      name: "Civic Community",
-      abbreviation: "CC",
+      name: "Movimiento Sin Miedo",
+      abbreviation: "MSM",
       votes: 42380,
       percentage: 1.49,
       color: "#EA580C",
+      candidate: {
+        name: "Eva Copa",
+        photo: "/img/EvaCopa.Morena.png",
+        bio: "Política de 39 años, expresidenta del Senado boliviano y exdirigente sindical. Proviene del movimiento sindical y fue una figura importante durante los conflictos políticos de 2019. Representa una opción política que busca diferenciarse tanto del MAS como de la oposición tradicional.",
+        partyWebsite: "https://msm.org.bo"
+      }
     },
     {
       id: "6",
-      name: "National Unity Front",
-      abbreviation: "FUN",
+      name: "Alianza Popular",
+      abbreviation: "AP",
       votes: 14238,
       percentage: 0.5,
       color: "#0891B2",
+      candidate: {
+        name: "Andrónico Rodríguez",
+        photo: "/img/AndrónicoRodríguez.AlianzaPopular.png",
+        bio: "Dirigente sindical cocalero de 34 años, actualmente presidente del Senado. Es considerado muy cercano a Evo Morales y representa el ala más radical del movimiento cocalero. Su candidatura refleja las divisiones internas dentro del movimiento masista.",
+        partyWebsite: "https://alianzapopular.org.bo"
+      }
     },
+    {
+      id: "7",
+      name: "Partido Demócrata Cristiano",
+      abbreviation: "PDC",
+      votes: 0,
+      percentage: 0,
+      color: "#065F46",
+      candidate: {
+        name: "Rodrigo Paz Pereira",
+        photo: "/img/RodrigoPazPereira.PDC.png",
+        bio: "Senador tarijeño de 55 años y exalcalde, líder del Partido Demócrata Cristiano. Aboga por una izquierda moderada y un enfoque en política social y regional.",
+        partyWebsite: "https://pdc.org.bo"
+      }
+    },
+    {
+      id: "8",
+      name: "Nueva Generación Patriótica",
+      abbreviation: "NGP",
+      votes: 0,
+      percentage: 0,
+      color: "#F43F5E",
+      candidate: {
+        name: "Jaime Dunn De Ávila",
+        photo: "/img/JaimeDunn.NGP.png",
+        bio: "Analista financiero de 57 años, con formación MBA y experiencia internacional. Candidato presidencial del partido emergente NGP.",
+        partyWebsite: "https://ngp.org.bo"
+      }
+    },
+    {
+      id: "9",
+      name: "Alianza Fuerza del Pueblo",
+      abbreviation: "FP",
+      votes: 0,
+      percentage: 0,
+      color: "#B91C1C",
+      candidate: {
+        name: "Jhonny Fernández",
+        photo: "/img/JhonnyFernandez.FP.png",
+        bio: "Actual alcalde de Santa Cruz de la Sierra, 61 años, candidato por la Alianza Fuerza del Pueblo. Presenta un perfil conservador con fuerte apoyo regional.",
+        partyWebsite: "https://fuersadelpueblo.bo"
+      }
+    },
+    {
+      id: "10",
+      name: "Alianza Libertad y Progreso ADN",
+      abbreviation: "LYP-ADN",
+      votes: 0,
+      percentage: 0,
+      color: "#DC2626",
+      candidate: {
+        name: "Pavel Aracena",
+        photo: "/img/PavelAracena.LYP-ADN.png",
+        bio: "Ingeniero militar de 48 años, candidato por la alianza LYP‑ADN (Libertad y Progreso). Representa una opción de derecha nacionalista.",
+        partyWebsite: "https://adn.org.bo"
+      }
+    }
   ],
   regions: [
     {

@@ -1,3 +1,10 @@
+export interface Candidate {
+  name: string
+  photo: string
+  bio: string
+  partyWebsite: string
+}
+
 export interface PoliticalParty {
   id: string
   name: string
@@ -6,6 +13,7 @@ export interface PoliticalParty {
   percentage: number
   color: string
   logo?: string
+  candidate: Candidate
 }
 
 export interface BoliviaRegion {
