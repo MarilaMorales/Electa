@@ -13,95 +13,133 @@ interface CentralNumberDisplayProps {
   label: string       // The title to show above the number
 }
 
+interface VoteSummary {
+  totalVotes: number;
+  partyBreakdown: {
+    name: string;
+    count: number;
+    percent: number;
+  }[];
+}
+
 export function CentralNumberDisplay({ value, onChange, label }: CentralNumberDisplayProps) {
-  // State variables that can change and make the component update
-  // isConnected: tells us if we're connected to the server (true) or not (false)
-  const [isConnected, setIsConnected] = useState(false)
-  
-  // displayValue: the current number we're showing
-  // null means we haven't received any updates from the server yet
   const [displayValue, setDisplayValue] = useState<number | null>(null)
-  
-  // lastUpdated: stores when we last got an update from the server
-  // empty string means we haven't received any updates yet
-  const [lastUpdated, setLastUpdated] = useState<string>("")
+  const [isConnected, setIsConnected] = useState<boolean>(false)
+  const [lastUpdated, setLastUpdated] = useState<string>('')
 
-  // Set up socket connection and handle real-time updates
+  // Efecto para inicializar el valor
   useEffect(() => {
-    // Get our connection to the server using the socket singleton
-    const socket = getSocket()
-    
-    // When we successfully connect to the server
-    socket.on('connect', () => {
-      setIsConnected(true)  // Update our connection status to connected
-    })
+    console.log('🔄 [CentralNumberDisplay] Inicializando con valor:', value);
+    setDisplayValue(value);
+  }, []);
 
-    // When we lose connection to the server
-    socket.on('disconnect', () => {
-      setIsConnected(false)  // Update our connection status to disconnected
-    })
+  useEffect(() => {
+    console.log('🔄 [CentralNumberDisplay] Iniciando conexión socket...');
+    console.log('📊 [CentralNumberDisplay] Estado actual:', { displayValue, isConnected, lastUpdated });
     
-    // When we receive a new vote count from the server
-    socket.on('vote count', (count: number) => {
-      setDisplayValue(count)  // Update the number we're displaying
-      setLastUpdated(new Date().toLocaleTimeString('es-BO'))  // Save the current time as last update
-      onChange(count)  // Notify the parent component about the new value
-    })
+    const socket = getSocket();
+    let isComponentMounted = true;
+    
+    // Configurar listeners del socket
+    const setupSocketListeners = () => {
+      socket.on('connect', () => {
+        if (!isComponentMounted) return;
+        console.log('🟢 [CentralNumberDisplay] Socket conectado, ID:', socket.id);
+        setIsConnected(true);
+        console.log('📤 [CentralNumberDisplay] Solicitando resumen global...');
+        socket.emit('get-global-summary');
+      });
 
-    // If we're not connected yet, show the initial value passed as prop
-    if (!isConnected) {
-      setDisplayValue(value)
+      socket.on('disconnect', (reason: string) => {
+        if (!isComponentMounted) return;
+        console.log('🔴 [CentralNumberDisplay] Socket desconectado. Razón:', reason);
+        setIsConnected(false);
+      });
+
+      socket.on('connect_error', (error: Error) => {
+        if (!isComponentMounted) return;
+        console.error('❌ [CentralNumberDisplay] Error de conexión:', error.message);
+        setIsConnected(false);
+      });
+      
+      socket.on('global vote summary', (data: any) => {
+        if (!isComponentMounted) return;
+        console.log('📥 [CentralNumberDisplay] Datos recibidos del servidor:', {
+          totalVotes: data.totalVotes,
+          timestamp: new Date().toISOString(),
+          socketId: socket.id,
+          isConnected: socket.connected
+        });
+
+        // Actualizar el estado local y notificar al padre
+        if (data && typeof data.totalVotes === 'number') {
+          const newValue = data.totalVotes;
+          console.log('✅ [CentralNumberDisplay] Actualizando estados:', {
+            displayValue: newValue,
+            previousValue: displayValue,
+            timestamp: new Date().toISOString()
+          });
+          setDisplayValue(newValue);
+          setLastUpdated(new Date().toLocaleTimeString('es-BO'));
+          onChange(newValue);
+        } else {
+          console.warn('⚠️ [CentralNumberDisplay] Datos recibidos inválidos:', data);
+        }
+      });
+    };
+
+    // Configurar los listeners
+    setupSocketListeners();
+
+    // Solicitar datos iniciales si ya estamos conectados
+    if (socket.connected) {
+      console.log('📤 [CentralNumberDisplay] Socket ya conectado, solicitando datos iniciales...');
+      socket.emit('get-global-summary');
     }
 
-    // Cleanup function: remove all event listeners when component unmounts
-    // This prevents memory leaks and duplicate listeners
+    // Solicitar datos cada 5 segundos si estamos conectados
+    const interval = setInterval(() => {
+      if (socket.connected && isComponentMounted) {
+        console.log('🔄 [CentralNumberDisplay] Solicitando actualización periódica...');
+        socket.emit('get-global-summary');
+      }
+    }, 5000);
+
+    // Limpiar listeners y intervalos cuando el componente se desmonta
     return () => {
-      socket.off('vote count')  // Stop listening for vote updates
-      socket.off('connect')     // Stop listening for connection events
-      socket.off('disconnect')  // Stop listening for disconnection events
-    }
-  }, [onChange, value, isConnected])  // Re-run effect if these dependencies change
+      console.log('🧹 [CentralNumberDisplay] Limpiando conexión socket...');
+      isComponentMounted = false;
+      clearInterval(interval);
+      socket.off('global vote summary');
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('connect_error');
+    };
+  }, [onChange]);
 
-  // Helper function to format numbers with commas and proper locale
-  // Example: 1234567 becomes "1,234,567" in Bolivia format
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('es-BO').format(num)
-  }
+  // Efecto para depurar cambios en displayValue
+  useEffect(() => {
+    console.log('📊 [CentralNumberDisplay] displayValue actualizado:', displayValue);
+  }, [displayValue]);
 
-  // Render the component UI
   return (
-    // Main container with max width and center alignment
-    <div className="text-center max-w-6xl mx-auto">
-      {/* Title section - shows the label prop */}
-      <h2 className="text-3xl md:text-4xl font-bold text-slate-300 mb-6">{label}</h2>
-
-      {/* Container for the big number display with hover effects */}
-      <div className="relative group">
-        {/* Blue gradient background with responsive padding and rounded corners */}
-        <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-8 md:p-12 lg:p-16 xl:p-20 shadow-2xl border border-blue-500/30 min-h-[200px] md:min-h-[300px] lg:min-h-[400px] flex flex-col items-center justify-center">
-          {/* The actual number display - responsive font sizes */}
-          <div className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl 2xl:text-[10rem] font-black text-white mb-4 font-mono tracking-tight leading-none break-all text-center max-w-full overflow-hidden">
-            {/* Show server value if available, otherwise show initial value */}
-            {displayValue !== null ? formatNumber(displayValue) : formatNumber(value)}
-          </div>
-          
-          {/* Connection status indicator - only visible on hover */}
-          <div className="flex items-center justify-center space-x-2 text-blue-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-auto">
-            <Edit3 size={20} />
-            <span className="text-lg">
-              {/* Show different text based on connection status */}
-              {isConnected ? "Auto-updating" : "Connecting..."}
-            </span>
-          </div>
+    <div className="relative">
+      <div className="text-center">
+        <div className="text-4xl font-bold text-white mb-2">
+          {displayValue?.toLocaleString() ?? value.toLocaleString()}
         </div>
+        <div className="text-sm text-slate-400">{label}</div>
+        {lastUpdated && (
+          <div className="text-xs text-slate-500 mt-1">
+            Última actualización: {lastUpdated}
+          </div>
+        )}
       </div>
-
-      {/* Last update timestamp - only shown when we have updates */}
-      <div className="mt-6 text-slate-400 text-lg">
-        {lastUpdated && `Last updated: ${lastUpdated}`}
+      <div className="absolute -top-2 -right-2">
+        <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
       </div>
     </div>
-  )
+  );
 }
 
 

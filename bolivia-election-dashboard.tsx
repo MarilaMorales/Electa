@@ -2,13 +2,17 @@
 
 import { useState, useEffect } from "react"
 import { CentralNumberDisplay } from "./components/CentralNumberDisplay"
-import { BoliviaMap } from "./components/BoliviaMap"
+import dynamic from 'next/dynamic'
 import { PoliticalParties } from "./components/PoliticalParties"
-import { ThreeVisualization } from "./components/ThreeVisualization"
 import { IncidentsFlag } from "./components/IncidentsFlag"
-import { mockElectionData } from "./data/mockData"
+import { mockElectionData } from "./public/data/mockData"
 import type { BoliviaRegion, ElectionData } from "./types/election"
 import { getSocket } from "./lib/socket"
+import { Header } from "./components/Header"
+
+// Dynamically import ECharts components with SSR disabled
+const MapWithWebSocket = dynamic(() => import('./components/map2'), { ssr: false })
+const BarChart = dynamic(() => import('./components/BarChart'), { ssr: false })
 
 export default function BoliviaElectionDashboard() {
   const [electionData, setElectionData] = useState<ElectionData>({
@@ -36,15 +40,15 @@ export default function BoliviaElectionDashboard() {
   useEffect(() => {
     const socket = getSocket()
     
-    socket.on('vote count', (count: number) => {
+    socket.on('global vote summary', (data: { totalVotes: number }) => {
       setElectionData(prev => ({
         ...prev,
-        totalVotes: count
+        totalVotes: data.totalVotes
       }))
     })
 
     return () => {
-      socket.off('vote count')
+      socket.off('global vote summary')
     }
   }, [])
 
@@ -63,16 +67,11 @@ export default function BoliviaElectionDashboard() {
 
       {/* Main Content */}
       <div className="relative z-10">
-        {/* Header */}
-        <header className="text-center py-8 px-4">
-          <h1 className="text-4xl md:text-6xl font-black bg-gradient-to-r from-blue-600 via-slate-300 to-blue-400 bg-clip-text text-transparent mb-2">
-            Bolivia Election Dashboard
-          </h1>
-          <p className="text-slate-400 text-lg">Real-time Election Monitoring System</p>
-        </header>
+        {/* New Header Component */}
+        <Header />
 
         {/* Top Priority - Total Votes Counter */}
-        <div className="container mx-auto px-4 mb-12">
+        <div className="container mx-auto px-4 mb-12 mt-8">
           <div className="flex justify-center">
             <CentralNumberDisplay
               value={electionData.totalVotes}
@@ -87,12 +86,14 @@ export default function BoliviaElectionDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Column - Bolivia Map */}
             <div className="lg:col-span-6">
-              <BoliviaMap regions={electionData.regions} onRegionClick={handleRegionClick} />
+              {/* <BoliviaMap regions={electionData.regions} onRegionClick={handleRegionClick} /> */}
+              <MapWithWebSocket />
 
-              {/* Three.js Visualization */}
+              {/* Three.js Visualization replaced with BarChart */}
               <div className="mt-8">
-                <h3 className="text-lg font-semibold text-slate-300 mb-4 text-center">3D Vote Distribution</h3>
-                <ThreeVisualization data={partyVoteData} isVisible={showVisualization} />
+                <h3 className="text-lg font-semibold text-slate-300 mb-4 text-center">Vote Distribution</h3>
+                {/* <ThreeVisualization data={partyVoteData} isVisible={showVisualization} /> */}
+                <BarChart active={true} />
               </div>
             </div>
 

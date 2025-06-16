@@ -1,4 +1,4 @@
-import type { ElectionData } from "../types/election"
+import type { ElectionData } from "../../types/election"
 
 export const mockElectionData: ElectionData = {
   totalVotes: 2847593,
