@@ -2,145 +2,152 @@
 "use client"
 
 // Import necessary tools from React and our socket connection
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Edit3 } from "lucide-react"
 import { getSocket } from "../lib/socket"
 
-// Define what information this component needs to work
-interface CentralNumberDisplayProps {
-  value: number        // The starting number to show
-  onChange: (value: number) => void  // Function to tell parent when number changes
-  label: string       // The title to show above the number
+interface PartyData {
+  name: string;
+  count: number;
+  percent: number;
 }
 
 interface VoteSummary {
   totalVotes: number;
-  partyBreakdown: {
-    name: string;
-    count: number;
-    percent: number;
-  }[];
+  partyBreakdown: PartyData[];
 }
 
-export function CentralNumberDisplay({ value, onChange, label }: CentralNumberDisplayProps) {
-  const [displayValue, setDisplayValue] = useState<number | null>(null)
-  const [isConnected, setIsConnected] = useState<boolean>(false)
-  const [lastUpdated, setLastUpdated] = useState<string>('')
+interface CentralNumberDisplayProps {
+  value: number;
+  onChange: (value: number) => void;
+  label: string;
+}
 
-  // Efecto para inicializar el valor
-  useEffect(() => {
-    console.log('🔄 [CentralNumberDisplay] Inicializando con valor:', value);
-    setDisplayValue(value);
-  }, []);
+const CentralNumberDisplay: React.FC<CentralNumberDisplayProps> = ({ value: initialValue, onChange, label }) => {
+  const [totalVotes, setTotalVotes] = useState<number>(0);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editValue, setEditValue] = useState<string>('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     console.log('🔄 [CentralNumberDisplay] Iniciando conexión socket...');
-    console.log('📊 [CentralNumberDisplay] Estado actual:', { displayValue, isConnected, lastUpdated });
-    
     const socket = getSocket();
-    let isComponentMounted = true;
     
-    // Configurar listeners del socket
-    const setupSocketListeners = () => {
-      socket.on('connect', () => {
-        if (!isComponentMounted) return;
-        console.log('🟢 [CentralNumberDisplay] Socket conectado, ID:', socket.id);
-        setIsConnected(true);
-        console.log('📤 [CentralNumberDisplay] Solicitando resumen global...');
-        socket.emit('get-global-summary');
-      });
+    socket.on('connect', () => {
+      console.log('🟢 [CentralNumberDisplay] Socket conectado, ID:', socket.id);
+      setIsConnected(true);
+      console.log('📤 [CentralNumberDisplay] Solicitando resumen global...');
+      socket.emit('get-global-summary');
+    });
 
-      socket.on('disconnect', (reason: string) => {
-        if (!isComponentMounted) return;
-        console.log('🔴 [CentralNumberDisplay] Socket desconectado. Razón:', reason);
-        setIsConnected(false);
+    socket.on('global vote summary', (data: VoteSummary) => {
+      console.log('📥 [CentralNumberDisplay] Datos recibidos del servidor:', {
+        totalVotes: data.totalVotes,
+        timestamp: new Date().toISOString()
       });
-
-      socket.on('connect_error', (error: Error) => {
-        if (!isComponentMounted) return;
-        console.error('❌ [CentralNumberDisplay] Error de conexión:', error.message);
-        setIsConnected(false);
-      });
-      
-      socket.on('global vote summary', (data: any) => {
-        if (!isComponentMounted) return;
-        console.log('📥 [CentralNumberDisplay] Datos recibidos del servidor:', {
-          totalVotes: data.totalVotes,
-          timestamp: new Date().toISOString(),
-          socketId: socket.id,
-          isConnected: socket.connected
+      if (data && typeof data.totalVotes === 'number') {
+        console.log('✅ [CentralNumberDisplay] Actualizando totalVotes:', {
+          anterior: totalVotes,
+          nuevo: data.totalVotes,
+          timestamp: new Date().toISOString()
         });
+        
+        setTotalVotes(data.totalVotes);
+        setLastUpdated(new Date().toLocaleTimeString('es-BO'));
+        onChange(data.totalVotes);
+      } else {
+        console.warn('⚠️ [CentralNumberDisplay] Datos recibidos inválidos:', data);
+      }
+    });
 
-        // Actualizar el estado local y notificar al padre
-        if (data && typeof data.totalVotes === 'number') {
-          const newValue = data.totalVotes;
-          console.log('✅ [CentralNumberDisplay] Actualizando estados:', {
-            displayValue: newValue,
-            previousValue: displayValue,
-            timestamp: new Date().toISOString()
-          });
-          setDisplayValue(newValue);
-          setLastUpdated(new Date().toLocaleTimeString('es-BO'));
-          onChange(newValue);
-        } else {
-          console.warn('⚠️ [CentralNumberDisplay] Datos recibidos inválidos:', data);
-        }
-      });
-    };
+    socket.on('connect_error', (error: Error) => {
+      console.error('❌ [CentralNumberDisplay] Error de conexión:', error.message);
+      setIsConnected(false);
+    });
 
-    // Configurar los listeners
-    setupSocketListeners();
+    socket.on('disconnect', (reason: string) => {
+      console.log('🔴 [CentralNumberDisplay] Socket desconectado. Razón:', reason);
+      setIsConnected(false);
+    });
 
     // Solicitar datos iniciales si ya estamos conectados
     if (socket.connected) {
       console.log('📤 [CentralNumberDisplay] Socket ya conectado, solicitando datos iniciales...');
       socket.emit('get-global-summary');
+      setIsConnected(true);
     }
 
     // Solicitar datos cada 5 segundos si estamos conectados
     const interval = setInterval(() => {
-      if (socket.connected && isComponentMounted) {
+      if (socket.connected) {
         console.log('🔄 [CentralNumberDisplay] Solicitando actualización periódica...');
         socket.emit('get-global-summary');
       }
     }, 5000);
 
-    // Limpiar listeners y intervalos cuando el componente se desmonta
     return () => {
       console.log('🧹 [CentralNumberDisplay] Limpiando conexión socket...');
-      isComponentMounted = false;
       clearInterval(interval);
       socket.off('global vote summary');
       socket.off('connect');
       socket.off('disconnect');
       socket.off('connect_error');
     };
-  }, [onChange]);
+  }, []); // Sin dependencias para evitar re-subscripciones
 
-  // Efecto para depurar cambios en displayValue
-  useEffect(() => {
-    console.log('📊 [CentralNumberDisplay] displayValue actualizado:', displayValue);
-  }, [displayValue]);
+  // Log para depurar el renderizado
+  console.log('🎨 [CentralNumberDisplay] Renderizando con:', {
+    totalVotes,
+    initialValue,
+    isConnected,
+    lastUpdated
+  });
 
   return (
-    <div className="relative">
-      <div className="text-center">
-        <div className="text-4xl font-bold text-white mb-2">
-          {displayValue?.toLocaleString() ?? value.toLocaleString()}
+    <div className="relative group">
+      <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl p-8 md:p-12 lg:p-16 shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 hover:scale-[1.02] border border-blue-500/30 backdrop-blur-sm">
+        {/* Indicador de conexión */}
+        <div className="absolute top-4 right-4 flex items-center space-x-2">
+          <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+          <span className="text-xs text-white/80">
+            {isConnected ? 'Conectado' : 'Desconectado'}
+          </span>
         </div>
-        <div className="text-sm text-slate-400">{label}</div>
-        {lastUpdated && (
-          <div className="text-xs text-slate-500 mt-1">
-            Última actualización: {lastUpdated}
+
+        {/* Número principal */}
+        <div className="text-center">
+          <div className="relative">
+            <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white mb-4 font-mono tracking-tight leading-none transition-all duration-300 transform hover:scale-105">
+              {totalVotes.toLocaleString()}
+            </div>
+            {/* Efecto de brillo */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           </div>
-        )}
-      </div>
-      <div className="absolute -top-2 -right-2">
-        <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+          
+          {/* Etiqueta */}
+          <div className="text-xl md:text-2xl font-semibold text-blue-100 mb-2">
+            {label}
+          </div>
+
+          {/* Última actualización */}
+          {lastUpdated && (
+            <div className="text-sm text-blue-200/80 mt-2 flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 rounded-full bg-blue-300 animate-pulse" />
+              <span>Última actualización: {lastUpdated}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Efecto de borde brillante */}
+        <div className="absolute inset-0 rounded-3xl border-2 border-blue-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
     </div>
   );
 }
+
+export default CentralNumberDisplay;
 
 
 

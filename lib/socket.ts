@@ -1,9 +1,9 @@
 import { Socket, Manager } from 'socket.io-client';
-import type { Socket as SocketType } from 'socket.io-client';
+import type { Socket as SocketType, Manager as ManagerType } from 'socket.io-client';
 import { ElectionData } from '../types/election';
 
-let socket: InstanceType<typeof Socket> | null = null;
-let manager: InstanceType<typeof Manager> | null = null;
+let socket: SocketType | null = null;
+let manager: ManagerType | null = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 2000;
@@ -86,14 +86,11 @@ export const getSocket = () => {
       
       if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
         console.error('Socket: Máximo número de intentos de reconexión alcanzado');
-        if (manager) {
-          manager.disconnect();
-          manager = null;
-        }
         if (socket) {
           socket.disconnect();
           socket = null;
         }
+        manager = null;
       } else {
         console.log(`Socket: Intento de reconexión ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
       }

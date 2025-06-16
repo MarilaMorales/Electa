@@ -21,6 +21,7 @@ export function PoliticalParties({ parties: initialParties, onPartiesChange }: P
   const [isExpanded, setIsExpanded] = useState(false)
   const [parties, setParties] = useState<PoliticalParty[]>(initialParties)
   const [selectedCandidate, setSelectedCandidate] = useState<PoliticalParty | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const visibleParties = isExpanded ? parties : parties.slice(0, 3)
 
   useEffect(() => {
@@ -69,6 +70,11 @@ export function PoliticalParties({ parties: initialParties, onPartiesChange }: P
     emitVoteUpdate(update)
   }
 
+  const handleCandidateClick = (party: PoliticalParty) => {
+    setSelectedCandidate(party)
+    setIsModalOpen(true)
+  }
+
   return (
     <div className="w-full mx-auto">
       <h3 className="text-xl font-bold text-slate-300 mb-6 text-center">Political Parties</h3>
@@ -86,7 +92,7 @@ export function PoliticalParties({ parties: initialParties, onPartiesChange }: P
               <div className="flex items-center space-x-4">
                 <div 
                   className="relative w-16 h-16 rounded-full overflow-hidden cursor-pointer hover:ring-2 hover:ring-slate-500 transition-all duration-200"
-                  onClick={() => setSelectedCandidate(party)}
+                  onClick={() => handleCandidateClick(party)}
                 >
                   <img
                     src={party.candidate.photo}
@@ -135,10 +141,12 @@ export function PoliticalParties({ parties: initialParties, onPartiesChange }: P
 
       {selectedCandidate && (
         <CandidateModal
-          isOpen={!!selectedCandidate}
-          onClose={() => setSelectedCandidate(null)}
-          candidate={selectedCandidate.candidate}
-          partyName={selectedCandidate.name}
+          candidate={selectedCandidate}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false)
+            setSelectedCandidate(null)
+          }}
         />
       )}
 
